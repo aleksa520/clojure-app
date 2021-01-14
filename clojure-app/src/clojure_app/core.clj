@@ -4,7 +4,8 @@
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [config.core :refer [env]]
-            [rum.core :refer [defc render-static-markup]])
+            [rum.core :refer [defc render-static-markup]]
+            [next.jdbc :as jdbc])
   (:gen-class))
 
 (defc template [headline component]
@@ -28,4 +29,6 @@
 
 (defn -main
   [& args]
-  (run-jetty (wrap-defaults app site-defaults) {:port (:port env)}))
+  (let [datasource (jdbc/get-datasource (:db env))]
+    (jdbc/execute! datasource ["SELECT 1"]) 
+    (run-jetty (wrap-defaults app site-defaults) {:port (:port env)})))
