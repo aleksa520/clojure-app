@@ -8,6 +8,8 @@
             [next.jdbc :as jdbc])
   (:gen-class))
 
+(def datasource (jdbc/get-datasource (:db env)))
+
 (defc template [headline component]
   [:div {:id "main-div"
         :class "main-page-div"}
@@ -15,20 +17,19 @@
     [:ul {:class "nav"}
       [:li [:a {:href "/"} "Home"]]
       [:li [:a {:href "users"} "Users"]]]
-    (component)])
+    component])
 
-(defc main-page []
-  [:p "This is the main page!"])
+(defc main-page [req]
+  (let [result (jdbc/execute-one! datasource ["SELECT 'Hello' greeting"])]
+    [:p (:greeting result)]))
 
-(defc users-page[]
+(defc users-page []
   [:p "This is the users page!"])
 
 (defroutes app
-  (GET "/" [] (render-static-markup (template "Main Page" main-page)))
-  (GET "/users" [] (render-static-markup (template "Users" users-page))))
+  (GET "/" [req] (render-static-markup (template "Main Page" (main-page {:request req}))))
+  (GET "/users" [] (render-static-markup (template "Users" (users-page)))))
 
 (defn -main
-  [& args]
-  (let [datasource (jdbc/get-datasource (:db env))]
-    (jdbc/execute! datasource ["SELECT 1"]) 
-    (run-jetty (wrap-defaults app site-defaults) {:port (:port env)})))
+  [& args] 
+  (run-jetty (wrap-defaults app site-defaults) {:port (:port env)}))
